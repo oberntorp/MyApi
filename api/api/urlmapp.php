@@ -27,8 +27,6 @@
 			$this->requestUrl = $requestUrl;
 			$this->requestMethod = $requestMethod;
 			$this->debug = $_SERVER['SERVER_NAME'] == "localhost";
-			$this->classPositionUrl = ($this->debug) ? 3 : 2;
-			$this->methodPositionUrl = ($this->debug) ? 4 : 3;
 			$this->urlMappHelper = new UrlMappHelper();
 			$this->securityHelper = new Security();
 			$this->sessionId = $sessionId;
@@ -38,12 +36,14 @@
 		{
 			$error = "";
 			$parameters = array();
-			$urlParts = explode("/", $this->requestUrl);
-			$class = $urlParts[$this->classPositionUrl];
-			$method = $urlParts[$this->methodPositionUrl];
+			$explodedArray = explode("/", $this->requestUrl);
+			$apiUrlPartsStart = array_search("api", $explodedArray) +1;
+			$urlParts = array_slice($explodedArray, $apiUrlPartsStart);
+			$class = $urlParts[0];
+			$method = $urlParts[1];
 			if($this->urlMappHelper->CheckClassMethodExist($class, $method))
 			{
-				$this->urlMappHelper->GetParametersOfRequest($this->requestMethod, $urlParts, $class, $method, $this->sessionId, $parameters);
+				echo $this->urlMappHelper->GetParametersOfRequest($this->requestMethod, $urlParts, $class, $method, $this->sessionId, $parameters);
 			}
 			else
 			{
