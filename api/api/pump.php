@@ -8,7 +8,7 @@
 		private $login = null;
 		function __construct()
 		{
-			$this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("tarno_nu", "ruDGWUGAywcKeA89fAACYi83", "tarno.nu.mysql", "tarno_nu");			
+			$this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("", "", "", "");			
 			$this->login = new Login();
 		}
 		

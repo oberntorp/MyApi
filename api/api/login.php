@@ -1,12 +1,10 @@
 <?php
 require_once("helpers/users.php");
 require_once("helpers/database.php");
-require_once("helpers/login.php");
 require_once("users.php");
 require_once("helpers/security.php");
 class Login
 {
-	private $loginHelper = null;
 	private $db = null;
 	private $usersHelper = null;
 	private $debug = true;
@@ -15,8 +13,7 @@ class Login
 	
 	function __construct()
 	{
-		$this->loginHelper = new LoginHelper();
-		$this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("tarno_nu", "ruDGWUGAywcKeA89fAACYi83", "tarno.nu.mysql", "tarno_nu");			
+		$this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("", "", "", "");			
 		$this->usersHelper = new UsersHelper();
 		$this->users = new Users();
 		$this->security = new Security();
