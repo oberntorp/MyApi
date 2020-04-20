@@ -148,7 +148,8 @@
         {
             return (key_exists("user_id", $parameters)) ? ((($this->RequiresAuth($class, $method) && !$this->CheckVilidityJWT($db->RemoveCitationMarks($sessionId))
                     || ($this->RequiresAdmin($class, $method) && $this->IsPreveledgeUserLoggedInNotAdmin($sessionId, $db)) 
-                    || $this->IsRighgtUserNotLoggedIn($sessionId, $parameters["user_id"], $db)))) : (($this->RequiresAuth($class, $method) && !$this->CheckVilidityJWT($db->RemoveCitationMarks($sessionId))) || ($this->RequiresAdmin($class, $method) && $this->IsPreveledgeUserLoggedInNotAdmin($sessionId, $db)));        
+                    || $this->IsRighgtUserNotLoggedIn($sessionId, $parameters["user_id"], $db)))) : (($this->RequiresAuth($class, $method) && !$this->CheckVilidityJWT($db->RemoveCitationMarks($sessionId))) 
+                    || ($this->RequiresAdmin($class, $method) && $this->IsPreveledgeUserLoggedInNotAdmin($sessionId, $db)));        
                 
         }
     }

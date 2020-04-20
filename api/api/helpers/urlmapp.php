@@ -7,8 +7,7 @@
 
 		function __construct()
 		{
-			$this->debug = $_SERVER['SERVER_NAME'] == "localhost";
-			$this->parameterPosition = ($this->debug) ? 5 : 4;
+			$this->parameterPosition = 2;
 			$this->securityHelper = new Security();
 
 		}
