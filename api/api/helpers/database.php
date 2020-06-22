@@ -7,12 +7,14 @@
 		private $db = "";
 		private $connection = null;
 		
-		function __construct($userIn, $passwordIn, $serverIn, $dbIn)
+		function __construct()
 		{
-			$this->user = $userIn;
-			$this->password = $passwordIn;
-			$this->server = $serverIn;
-			$this->db = $dbIn;
+			$connectionString = ($_SERVER['SERVER_NAME'] == "localhost") ? "root; ; localhost; tarnova" : "; ; ; ";
+			$connectionString = explode(";", $connectionString);
+			$this->user = trim($connectionString[0]);
+			$this->password = trim($connectionString[1]);
+			$this->server = trim($connectionString[2]);
+			$this->db = trim($connectionString[3]);
 		}
 		
 		public function Connect()

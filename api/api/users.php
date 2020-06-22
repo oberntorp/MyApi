@@ -9,7 +9,7 @@
 		
 		function __construct()
 		{
-			$this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("", "", "", "");			
+			$this->db = new Database();			
 			$this->usersHelper = new UsersHelper($this->db);
 		}
 		public function GetUserById($parameters)
