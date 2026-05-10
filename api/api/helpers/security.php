@@ -80,11 +80,13 @@
 
         private function IsPreveledgeUserLoggedInNotAdmin($sessionId, $db)
         {
-            $sessionData = ($this->CheckVilidityJWT($db->RemoveCitationMarks($sessionId))) ? explode("_", $this->GetDataOfJWT($db->RemoveCitationMarks($sessionId))) : null;			
+            $sessionData = ($this->CheckVilidityJWT($db->RemoveCitationMarks($sessionId))) ? explode("_", $this->GetDataOfJWT($db->RemoveCitationMarks($sessionId))) : null;
             $userId = (int)$sessionData[1];
-            $sql = sprintf("SELECT users_priviledge FROM users WHERE is_deleted = 0 AND users_id = %d", $userId);
-			$result = $db->Select($sql);
-			return $result[0]["users_priviledge"] !== "admin";
+            $result = $db->Select(
+                "SELECT users_priviledge FROM users WHERE is_deleted = 0 AND users_id = ?",
+                "i", [$userId]
+            );
+            return $result[0]["users_priviledge"] !== "admin";
         }
 
         public function RequiresAuth($class, $method)
@@ -137,11 +139,15 @@
 
         public function GetDataOfJWT($jwtToken)
         {
-            $decodedData = JWT::decode($jwtToken, $this->key, array('HS512'));
-            if($decodedData != null)
-                return $decodedData->data->session_id;
-            else
+            try {
+                $decodedData = JWT::decode($jwtToken, $this->key, array('HS512'));
+                if ($decodedData != null)
+                    return $decodedData->data->session_id;
+                else
+                    return null;
+            } catch (Exception $e) {
                 return null;
+            }
         }
 
         public function CheckAccessRequirements($class, $db, $method, $parameters, $sessionId)
