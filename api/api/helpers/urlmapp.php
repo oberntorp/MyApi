@@ -26,8 +26,8 @@
 											array("lends" => "GetPumpLends", "pumplenddone" => "UpdatePumpLendsEntryDone", "pumplendstatus" => "GetPumpLendStatus", "solutions" => "GetPumpSolutions", "createlends" => "CreatePumpLendsEntry", "createsolutions" => "CreatePumpSolutionsEntry"),
 											"images"  => 
 											array("get" => "GetImageById", "create" => "GreateImageEntry"),
-											"documents" => 
-											array("get" => "GetDocumentById", "getall" => "GetDocuments", "create" => "CreateDocumentEntry", "createdocumentmetaentry" => "CreateDocumentMetaEntry", "delete" => "DeleteDocument"),
+											"documents" =>
+											array("get" => "GetDocumentById", "getall" => "GetDocuments", "create" => "CreateDocumentEntry", "createdocumentmetaentry" => "CreateDocumentMetaEntry", "delete" => "DeleteDocument", "maxuploadsize" => "GetMaxUploadSize"),
 											"links" =>
 											array("get" => "GetLinkById", "getall" => "GetLinks", "create" => "CreateLink", "update" => "UpdateLink", "delete" => "DeleteLink"), 
 											"importantinfo" =>
@@ -40,7 +40,7 @@
 											"login" =>
 												array("get" => array("session_id"),"getinfo" => array("session_id")),
 											"documents" =>
-											array("delete" => array("document_id"), "get" => array("document_id", "session_id"), "getall" => array()),
+											array("delete" => array("document_id"), "get" => array("document_id", "session_id"), "getall" => array(), "maxuploadsize" => array()),
 											"images" =>
 											array("get" => array("image_id")),
 											"links" =>

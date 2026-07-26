@@ -27,17 +27,35 @@
 		public function GetDocuments()
 		{
 			$connection = $this->db->Connect();
-			
+
 			$sql = sprintf("SELECT documents.documents_id AS documents_id, documents_name, documents_meta.documents_meta_doc_type AS documents_type, documents_meta.documents_meta_doc_date AS documents_date FROM documents JOIN documents_meta ON documents.documents_id = documents_meta.documents_id WHERE is_deleted = 0 ORDER BY documents_meta.documents_meta_doc_date DESC");
 			$resultGetDocuments = $this->db->Select($sql);
 			return $resultGetDocuments;
 		}
-		
+
+		public function GetMaxUploadSize()
+		{
+			return array("maxUploadSizeBytes" => $this->filesHelper->GetMaxUploadSizeBytes());
+		}
+
 		public function CreateDocumentEntry($parameters)
 		{
 			$result = null;
 			$connection = $this->db->Connect();
 			$documentFile = $parameters["document_file"];
+			$uploadError = $documentFile["error"] ?? UPLOAD_ERR_NO_FILE;
+			if ($uploadError !== UPLOAD_ERR_OK) {
+				$uploadErrorMessages = [
+					UPLOAD_ERR_INI_SIZE   => "Filen är större än vad servern tillåter (upload_max_filesize).",
+					UPLOAD_ERR_FORM_SIZE  => "Filen är större än vad formuläret tillåter.",
+					UPLOAD_ERR_PARTIAL    => "Filen laddades bara upp delvis.",
+					UPLOAD_ERR_NO_FILE    => "Ingen fil valdes.",
+					UPLOAD_ERR_NO_TMP_DIR => "Servern saknar en temporär mapp för uppladdningar.",
+					UPLOAD_ERR_CANT_WRITE => "Kunde inte skriva filen till disk.",
+					UPLOAD_ERR_EXTENSION  => "En serverutökning avbröt uppladdningen.",
+				];
+				return array("result" => -1, "errors" => [$uploadErrorMessages[$uploadError] ?? "Uppladdningen misslyckades."]);
+			}
 			$documentType = $this->db->SecureInput($documentFile["type"]);
 			$documentSize = $this->db->SecureInput($documentFile["size"]);
 			$documentName = $this->db->SecureInput($documentFile["name"]);

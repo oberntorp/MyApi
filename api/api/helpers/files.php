@@ -3,7 +3,40 @@ class FilesHelper
 {
 	private $allowedFileTypes = array("pdf" => "application/pdf");
 	private $allowedFileSize = 5242880;
-	
+
+	public function GetMaxUploadSizeBytes()
+	{
+		$limits = array_filter([
+			$this->allowedFileSize,
+			$this->IniSizeToBytes(ini_get('upload_max_filesize')),
+			$this->IniSizeToBytes(ini_get('post_max_size')),
+		], function ($value) {
+			return $value > 0;
+		});
+		return count($limits) > 0 ? min($limits) : $this->allowedFileSize;
+	}
+
+	private function IniSizeToBytes($sizeStr)
+	{
+		$sizeStr = trim((string)$sizeStr);
+		if ($sizeStr === '') {
+			return 0;
+		}
+		$unit = strtolower(substr($sizeStr, -1));
+		$value = (float)$sizeStr;
+		switch ($unit) {
+			case 'g':
+				$value *= 1024;
+				// fall through
+			case 'm':
+				$value *= 1024;
+				// fall through
+			case 'k':
+				$value *= 1024;
+		}
+		return (int)$value;
+	}
+
 	public function GenerateFilesOutput($fileInfo)
 	{
 		$fileName = $fileInfo["documents_name"];
