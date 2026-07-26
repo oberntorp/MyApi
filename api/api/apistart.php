@@ -38,11 +38,15 @@ class ApiStart
 
     public function CancelCallIfNoAccess()
     {
+        if ($this->error !== "")
+            return false;
         return $_SERVER["REQUEST_METHOD"] != "OPTIONS" && $this->urlMapp->securityHelper->CheckAccessRequirements($this->class, $this->db, $this->method, $this->parameters, $this->urlMapp->sessionId);
     }
 
     public function StartApiCall()
     {
+        if ($this->error !== "")
+            return;
         $this->classToCall = $this->urlMapp->GetClass($this->class);
         $this->methodToCall = $this->urlMapp->GetMethod($this->class, $this->method);
         $this->errors = $this->urlMapp->CollectParameterErrors($this->urlMapp->CheckParametersExist($this->class, $this->method, $this->parameters));
@@ -50,6 +54,11 @@ class ApiStart
 
     public function ReturnApiCallResult()
     {
+        if ($this->error !== "") {
+            http_response_code(404);
+            echo json_encode(["error" => $this->error]);
+            return;
+        }
         if($this->ErrorsExist())
             echo json_encode($this->errors);
         else

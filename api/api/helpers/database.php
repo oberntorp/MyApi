@@ -17,7 +17,7 @@
 			$this->db = trim($connectionString[3]);
 		}
 
-		private function connect()
+		private function establishConnection()
 		{
 			if ($this->connection === null) {
 				$this->connection = new mysqli($this->server, $this->user, $this->password, $this->db);
@@ -32,7 +32,7 @@
 		// Kept for backward compatibility
 		public function Connect()
 		{
-			return $this->connect();
+			return $this->establishConnection();
 		}
 
 		private function PrepareAndBind($con, $sql, $types, $params)
@@ -49,7 +49,7 @@
 
 		public function Insert($sql, $types = "", $params = [])
 		{
-			$con = $this->connect();
+			$con = $this->establishConnection();
 			$result = array();
 			if ($con) {
 				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
@@ -76,7 +76,7 @@
 
 		public function Update($sql, $types = "", $params = [])
 		{
-			$con = $this->connect();
+			$con = $this->establishConnection();
 			$result = array();
 			if ($con) {
 				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
@@ -97,7 +97,7 @@
 
 		public function SoftDelete($sql, $types = "", $params = [])
 		{
-			$con = $this->connect();
+			$con = $this->establishConnection();
 			$result = array();
 			if ($con) {
 				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
@@ -118,7 +118,7 @@
 
 		public function Select($sql, $types = "", $params = [])
 		{
-			$con = $this->connect();
+			$con = $this->establishConnection();
 			$returnResult = array();
 			if ($con) {
 				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
@@ -147,7 +147,7 @@
 
 		public function Remove($sql, $types = "", $params = [])
 		{
-			$con = $this->connect();
+			$con = $this->establishConnection();
 			$result = array();
 			if ($con) {
 				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
