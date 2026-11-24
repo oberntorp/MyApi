@@ -15,10 +15,9 @@
 		public function GetLinkById($parameters)
 		{
 			$connection = $this->db->Connect();
-			$linkId = $this->db->SecureInput($parameters["link_id"]);
+			$linkId = $parameters["link_id"];
 			
-			$sql = sprintf("SELECT * FROM links WHERE is_deleted = 0 AND links_id = %d", $linkId);
-			$result = $this->db->Select($sql);
+			$result = $this->db->Select("SELECT * FROM links WHERE is_deleted = 0 AND links_id = ?", "i", [(int)$linkId]);
 			return $result[0];
 			
 		}
@@ -27,42 +26,37 @@
 		{
 			$connection = $this->db->Connect();
 			
-			$sql = sprintf("SELECT links_id, links_address, links_label FROM links WHERE is_deleted = 0");
-			$resultGetLinks = $this->db->Select($sql);
+			$resultGetLinks = $this->db->Select("SELECT links_id, links_address, links_label FROM links WHERE is_deleted = 0");
 			return $resultGetLinks;
 		}
 		
 		public function CreateLink($parameters)
 		{
 			$connection = $this->db->Connect();
-			$linkAdress = $this->db->SecureInput($parameters["link_address"]);
-			$linkLabel = $this->db->SecureInput($parameters["link_label"]);
+			$linkAdress = $parameters["link_address"];
+			$linkLabel = $parameters["link_label"];
 			
-			$sql = sprintf("INSERT INTO links SET links_address = '%s', links_label = '%s'", $linkAdress, $linkLabel);
-			
-			$resultCreateLink = $this->db->Insert($sql);
+			$resultCreateLink = $this->db->Insert("INSERT INTO links SET links_address = ?, links_label = ?", "ss", [$linkAdress, $linkLabel]);
 			return $resultCreateLink[0];
 		}
 		
 		public function UpdateLink($parameters)
 		{
 			$connection = $this->db->Connect();
-			$linkId = $this->db->SecureInput($parameters["link_id"]);
-			$linkAdress = $this->db->SecureInput($parameters["link_address"]);
-			$linkLabel = $this->db->SecureInput($parameters["link_label"]);
+			$linkId = $parameters["link_id"];
+			$linkAdress = $parameters["link_address"];
+			$linkLabel = $parameters["link_label"];
 			
-			$sql = sprintf("UPDATE links SET links_address = '%s', links_label = '%s' WHERE links_id = %d", $linkAdress, $linkLabel, $linkId);
-			$resultUpdateLink = $this->db->Update($sql);
+			$resultUpdateLink = $this->db->Update("UPDATE links SET links_address = ?, links_label = ? WHERE links_id = ?", "ssi", [$linkAdress, $linkLabel, (int)$linkId]);
 			return $resultUpdateLink[0];
 		}
 		
 		public function DeleteLink($parameters)
 		{
 			$connection = $this->db->connect();
-			$linkId = $this->db->SecureInput($parameters["link_id"]);
+			$linkId = $parameters["link_id"];
 			
-			$sql = sprintf("UPDATE links SET is_deleted = 1 WHERE links_id = %d", $linkId);
-			$resultDeleteLink = $this->db->SoftDelete($sql);
+			$resultDeleteLink = $this->db->SoftDelete("UPDATE links SET is_deleted = 1 WHERE links_id = ?", "i", [(int)$linkId]);
 			return $resultDeleteLink[0];
 		}
 	}

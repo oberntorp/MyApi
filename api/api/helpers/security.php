@@ -81,6 +81,21 @@
             $this->salt = $secrets["password_salt"];
         }
 
+        public function HashPassword($password)
+        {
+            return password_hash((string)$password, PASSWORD_DEFAULT);
+        }
+
+        public function VerifyPassword($password, $storedHash)
+        {
+            return is_string($storedHash) && $storedHash !== "" && password_verify((string)$password, $storedHash);
+        }
+
+        public function NeedsRehash($storedHash)
+        {
+            return password_needs_rehash($storedHash, PASSWORD_DEFAULT);
+        }
+
         public function GenerateHash($unEncryptedString)
         {
             return crypt($unEncryptedString, $this->salt);
@@ -99,17 +114,17 @@
 
         public function RequiresAuth($class, $method)
         {
-            return key_exists($method, $this->methodsRequiringAuth[$class]);
+            return !isset($this->methodsRequiringAuth[$class]) || key_exists($method, $this->methodsRequiringAuth[$class]);
         }
 
         private function RequiresAdmin($class, $method)
         {
-            return key_exists($method, $this->methodsRequiringAdmin[$class]);
+            return isset($this->methodsRequiringAdmin[$class]) && key_exists($method, $this->methodsRequiringAdmin[$class]);
         }
 
         private function RequiresSpecificUser($class, $method)
         {
-            return key_exists($method, $this->methodsRequiringSpecificUser[$class]);
+            return isset($this->methodsRequiringSpecificUser[$class]) && key_exists($method, $this->methodsRequiringSpecificUser[$class]);
         }
 
         private function IsRighgtUserNotLoggedIn($sessionId, $userId, $db)
@@ -139,7 +154,7 @@
                 JWT::decode($jwtToken, $this->key, array('HS512'));
                 return true; 
             } 
-            catch(UnexpectedValueException $e)
+            catch(Exception $e)
             {
                 return false;        
             }

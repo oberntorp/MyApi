@@ -16,8 +16,7 @@
 		{
 			$connection = $this->db->Connect();
 			
-			$sql = sprintf("SELECT * FROM pump_lends");
-			$result = $this->db->Select($sql);
+			$result = $this->db->Select("SELECT * FROM pump_lends");
 			return $result;
 			
 		}
@@ -26,8 +25,7 @@
 		{
 			$connection = $this->db->Connect();
 			
-			$sql = sprintf("SELECT * FROM pump_solutions");
-			$result = $this->db->Select($sql);
+			$result = $this->db->Select("SELECT * FROM pump_solutions");
 			return $result;
 			
 		}
@@ -35,24 +33,22 @@
 		public function CreatePumpLendsEntry($parameters)
 		{
 			$connection = $this->db->Connect();
-			$lend_start = $this->db->SecureInput($parameters["lends_start"]);
-			$lended_by = $this->db->SecureInput($parameters["lends_lended_by"]);
-			$lend_description = $this->db->SecureInput($parameters["lends_description"]);
+			$lend_start = $parameters["lends_start"];
+			$lended_by = $parameters["lends_lended_by"];
+			$lend_description = $parameters["lends_description"];
 			$lends_user_id = $this->login->GetIdUserLoggedIn(Array("session_id" => $parameters["session_id"]));
 			
-			$sql = sprintf("INSERT INTO pump_lends SET pump_lends_lended_by = '%s', pump_lends_description = '%s', pump_lends_start = '%s', pump_lends_users_id = %d", $lended_by, $lend_description, $lend_start, $lends_user_id);
-			$resultCreateLend = $this->db->Insert($sql);
+			$resultCreateLend = $this->db->Insert("INSERT INTO pump_lends SET pump_lends_lended_by = ?, pump_lends_description = ?, pump_lends_start = ?, pump_lends_users_id = ?", "sssi", [$lended_by, $lend_description, $lend_start, (int)$lends_user_id]);
 			return $resultCreateLend[0];
 		}
 
 		public function UpdatePumpLendsEntryDone($parameters)
 		{
 			$connection = $this->db->Connect();
-			$lend_end = $this->db->SecureInput($parameters["lends_end"]);
+			$lend_end = $parameters["lends_end"];
 			$lends_user_id = $this->login->GetIdUserLoggedIn(array("session_id" => $parameters["session_id"]));
 			
-			$sql = sprintf("UPDATE pump_lends SET pump_lends_end = '%s' WHERE pump_lends_users_id = %d AND pump_lends_end IS NULL", $lend_end, $lends_user_id);
-			$resultUpdateLendDone = $this->db->Update($sql);
+			$resultUpdateLendDone = $this->db->Update("UPDATE pump_lends SET pump_lends_end = ? WHERE pump_lends_users_id = ? AND pump_lends_end IS NULL", "si", [$lend_end, (int)$lends_user_id]);
 			return $resultUpdateLendDone[0];
 		}
 
@@ -61,8 +57,7 @@
 			$connection = $this->db->Connect();
 			$lends_user_id = $this->login->GetIdUserLoggedIn(array("session_id" => $parameters["session_id"]));
 			
-			$sql = sprintf("SELECT COUNT(pump_lends_id) AS lended, pump_lends_users_id FROM pump_lends WHERE pump_lends_end IS NULL GROUP BY pump_lends_users_id");
-			$resultLendStatus = $this->db->SELECT($sql);
+			$resultLendStatus = $this->db->SELECT("SELECT COUNT(pump_lends_id) AS lended, pump_lends_users_id FROM pump_lends WHERE pump_lends_end IS NULL GROUP BY pump_lends_users_id");
 
 			return array("is_lended" => (int)$resultLendStatus[0]["lended"]  > 0, "lended_by_logged_in_user" => $resultLendStatus[0]["pump_lends_users_id"] == $lends_user_id);
 		}
@@ -70,11 +65,10 @@
 		public function CreatePumpSolutionsEntry($parameters)
 		{
 			$connection = $this->db->Connect();
-			$solutionCreatedBy = $this->db->SecureInput($parameters["solutions_created_by"]);
-			$solutionDescription = $this->db->SecureInput($parameters["solutions_description"]);
+			$solutionCreatedBy = $parameters["solutions_created_by"];
+			$solutionDescription = $parameters["solutions_description"];
 			
-			$sql = sprintf("INSERT INTO pump_solutions SET pump_solutions_created_by = '%s', pump_solutions_description = '%s'", $solutionCreatedBy, $solutionDescription);
-			$resultCreateSolution = $this->db->Insert($sql);
+			$resultCreateSolution = $this->db->Insert("INSERT INTO pump_solutions SET pump_solutions_created_by = ?, pump_solutions_description = ?", "ss", [$solutionCreatedBy, $solutionDescription]);
 			return $resultCreateSolution[0];
 		}
 	}

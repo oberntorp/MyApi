@@ -4,6 +4,7 @@ require_once("helpers/database.php");
 require_once("helpers/login.php");
 require_once("users.php");
 require_once("helpers/security.php");
+require_once("helpers/loginthrottle.php");
 require_once("contact.php");
 
 class Login
@@ -28,20 +29,54 @@ class Login
 
 	public function CheckLoginChredentials($parameters)
 	{
-		$enqUserName = $parameters["user_username"];
-		$enqUserPass = $this->usersHelper->security->GenerateHash($parameters["user_password"]);
-		$result = $this->db->Select(
-			"SELECT * FROM users WHERE is_deleted = 0 AND users_username = ? AND users_password = ?",
-			"ss", [$enqUserName, $enqUserPass]
-		);
-		if ($result[0] != -1) {
-			$sessionInput = $result[0]["users_id"] . "_" . $this->usersHelper->security->GenerateHash($result[0]["users_username"]);
-			$sessionInput = (isset($sessionInput)) ? $sessionInput : "";
-			$sessionIdToJWT = (!$this->debug) ? $_SERVER["REMOTE_ADDR"] . "_" . $sessionInput : "127.0.0.1" . "_" . $sessionInput;
-			$sessionId = $this->security->SetJWtToken($sessionIdToJWT);
-			$sessionSet = $sessionId != null;
+		$userName = (string)$parameters["user_username"];
+		$throttle = new LoginThrottle($this->db);
+		$secondsBlocked = $throttle->SecondsUntilAllowed($userName);
+		if ($secondsBlocked > 0) {
+			return array("session_id" => "") + RateLimit::TooManyAttempts($secondsBlocked);
 		}
-		return array("session_id" => ((isset($sessionSet) && $sessionSet) ? $sessionId : ""));
+		$user = $this->FindUserByCredentials($userName, (string)$parameters["user_password"]);
+		if ($user === null) {
+			$throttle->RegisterFailure($userName);
+			return array("session_id" => "");
+		}
+		$throttle->RegisterSuccess($userName);
+		return array("session_id" => $this->CreateSession($user));
+	}
+
+	private function FindUserByCredentials($userName, $password)
+	{
+		$users = $this->db->Select(
+			"SELECT users_id, users_username, users_password FROM users WHERE is_deleted = 0 AND users_username = ?",
+			"s", [$userName]
+		);
+		if ($users[0] == -1) {
+			return null;
+		}
+		foreach ($users as $user) {
+			if ($this->security->VerifyPassword($password, $user["users_password"])) {
+				$this->UpgradePasswordHash($user, $password);
+				return $user;
+			}
+		}
+		return null;
+	}
+
+	private function UpgradePasswordHash($user, $password)
+	{
+		if ($this->security->NeedsRehash($user["users_password"])) {
+			$this->db->Update(
+				"UPDATE users SET users_password = ? WHERE users_id = ?",
+				"si", [$this->security->HashPassword($password), (int)$user["users_id"]]
+			);
+		}
+	}
+
+	private function CreateSession($user)
+	{
+		$sessionInput = $user["users_id"] . "_" . $this->security->GenerateHash($user["users_username"]);
+		$clientAddress = $this->debug ? "127.0.0.1" : $_SERVER["REMOTE_ADDR"];
+		return $this->security->SetJWtToken($clientAddress . "_" . $sessionInput) ?: "";
 	}
 
 	public function CheckLogedIn($parameters)

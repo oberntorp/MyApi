@@ -17,11 +17,9 @@
 		public function GetPages()
 		{
 			$connection = $this->db->Connect();
-			$sqlPagesName = sprintf("SELECT 
+			$resultGetPages = $this->db->Select("SELECT 
 									*
 									FROM pages");
-									
-			$resultGetPages = $this->db->Select($sqlPagesName);
 			return $resultGetPages;
 			
 		}
@@ -29,11 +27,10 @@
 		public function GetPageById($parameters)
 		{
 			$connection = $this->db->Connect();
-			$sqlPagesName = sprintf("SELECT 
+			$resultGetPage = $this->db->Select("SELECT 
 									*
 									FROM pages 
-									WHERE pages_id = %d", $parameters["page_id"]);		
-			$resultGetPage = $this->db->Select($sqlPagesName);
+									WHERE pages_id = ?", "i", [(int)$parameters["page_id"]]);
 			return $resultGetPage[0];
 			
 		}
@@ -41,16 +38,14 @@
 		public function CreatePage($parameters)
 		{
 			$connection = $this->db->Connect();
-			$sql = sprintf("INSERT INTO pages SET pages_name = '%s', pages_text = '%s'", $parameters["page_name"], $parameters["page_text"]);
-			return $this->db->Insert($sql)[0];
+			return $this->db->Insert("INSERT INTO pages SET pages_name = ?, pages_text = ?", "ss", [$parameters["page_name"], $parameters["page_text"]])[0];
 		}
 		
 		public function UpdatePage($parameters)
 		{
 			$resultUpdatePage = false;
 			$connection = $this->db->Connect();
-			$sql = sprintf("UPDATE pages SET pages_name = '%s', pages_text = '%s' WHERE pages_id = %d", $this->db->SecureInput($parameters["page_name"]), $parameters["page_text"], $parameters["page_id"]);
-			return $this->db->Update($sql)[0];
+			return $this->db->Update("UPDATE pages SET pages_name = ?, pages_text = ? WHERE pages_id = ?", "ssi", [$parameters["page_name"], $parameters["page_text"], (int)$parameters["page_id"]])[0];
 		}
 	}
 ?>

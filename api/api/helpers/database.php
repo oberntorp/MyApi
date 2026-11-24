@@ -1,175 +1,87 @@
 <?php
 	require_once(__DIR__ . "/config.php");
+
 	class Database
 	{
+		const NOT_FOUND = "Inga uppgifter hittades";
+		const GENERIC_ERROR = "Ett fel uppstod i databasen";
+
 		private $user = "";
 		private $password = "";
 		private $server = "";
 		private $db = "";
 		private $connection = null;
 
-		function __construct()
+		function __construct($user = null, $password = null, $server = null, $db = null)
 		{
-			$settings = Config::DatabaseSettings();
+			$settings = ($user === null) ? Config::DatabaseSettings() : array("user" => $user, "password" => $password, "server" => $server, "database" => $db);
 			$this->user = $settings["user"];
 			$this->password = $settings["password"];
 			$this->server = $settings["server"];
 			$this->db = $settings["database"];
 		}
 
-		private function establishConnection()
-		{
-			if ($this->connection === null) {
-				$this->connection = new mysqli($this->server, $this->user, $this->password, $this->db);
-				$this->connection->set_charset("utf8");
-				if ($this->connection->connect_error) {
-					die("Error connecting to database: " . $this->connection->connect_error);
-				}
-			}
-			return $this->connection;
-		}
-
-		// Kept for backward compatibility
 		public function Connect()
 		{
-			return $this->establishConnection();
-		}
-
-		private function PrepareAndBind($con, $sql, $types, $params)
-		{
-			$stmt = $con->prepare($sql);
-			if ($stmt === false) {
-				return false;
+			if ($this->connection !== null) {
+				return $this->connection;
 			}
-			if ($types !== "" && count($params) > 0) {
-				$stmt->bind_param($types, ...$params);
+			mysqli_report(MYSQLI_REPORT_OFF);
+			$connection = @new mysqli($this->server, $this->user, $this->password, $this->db);
+			if ($connection->connect_error) {
+				error_log("Database connection failed: " . $connection->connect_error);
+				http_response_code(503);
+				exit(json_encode(array("error" => "Databasen är inte tillgänglig just nu")));
 			}
-			return $stmt;
-		}
-
-		public function Insert($sql, $types = "", $params = [])
-		{
-			$con = $this->establishConnection();
-			$result = array();
-			if ($con) {
-				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
-				if ($stmt === false) {
-					$result[0] = -1;
-					$result[1] = $con->error;
-					return $result;
-				}
-				$stmt->execute();
-				if ($con->insert_id != 0) {
-					$result[0] = $con->insert_id;
-					$result[1] = "The record was inserted";
-				} else {
-					$result[0] = -1;
-					$result[1] = $stmt->error;
-				}
-				$stmt->close();
-			} else {
-				$result[0] = -1;
-				$result[1] = "Connection failed";
-			}
-			return $result;
-		}
-
-		public function Update($sql, $types = "", $params = [])
-		{
-			$con = $this->establishConnection();
-			$result = array();
-			if ($con) {
-				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
-				if ($stmt === false) {
-					$result[0] = -1;
-					$result[1] = $con->error;
-					return $result;
-				}
-				$stmt->execute();
-				$result[0] = $stmt->affected_rows;
-				$stmt->close();
-			} else {
-				$result[0] = -1;
-				$result[1] = "Connection failed";
-			}
-			return $result;
-		}
-
-		public function SoftDelete($sql, $types = "", $params = [])
-		{
-			$con = $this->establishConnection();
-			$result = array();
-			if ($con) {
-				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
-				if ($stmt === false) {
-					$result[0] = -1;
-					$result[1] = $con->error;
-					return $result;
-				}
-				$stmt->execute();
-				$result[0] = $stmt->affected_rows;
-				$stmt->close();
-			} else {
-				$result[0] = -1;
-				$result[1] = "Connection failed";
-			}
-			return $result;
+			$connection->set_charset("utf8");
+			$this->connection = $connection;
+			return $this->connection;
 		}
 
 		public function Select($sql, $types = "", $params = [])
 		{
-			$con = $this->establishConnection();
-			$returnResult = array();
-			if ($con) {
-				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
-				if ($stmt === false) {
-					$returnResult[0] = -1;
-					$returnResult[1] = $con->error;
-					return $returnResult;
-				}
-				$stmt->execute();
-				$result = $stmt->get_result();
-				if ($result->num_rows > 0) {
-					while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
-						$returnResult[] = $row;
-					}
-				} else {
-					$returnResult[0] = -1;
-					$returnResult[1] = "Inga uppgifter hittades";
-				}
-				$stmt->close();
-			} else {
-				$returnResult[0] = -1;
-				$returnResult[1] = "Connection failed";
+			$stmt = $this->Execute($sql, $types, $params);
+			if ($stmt === false) {
+				return $this->Failure();
 			}
-			return $returnResult;
+			$rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+			$stmt->close();
+			return count($rows) > 0 ? $rows : array(-1, self::NOT_FOUND);
+		}
+
+		public function Insert($sql, $types = "", $params = [])
+		{
+			$stmt = $this->Execute($sql, $types, $params);
+			if ($stmt === false) {
+				return $this->Failure();
+			}
+			$insertId = $this->connection->insert_id;
+			$stmt->close();
+			return $insertId != 0 ? array($insertId, "The record was inserted") : $this->Failure();
+		}
+
+		public function Update($sql, $types = "", $params = [])
+		{
+			return $this->AffectedRows($sql, $types, $params);
+		}
+
+		public function SoftDelete($sql, $types = "", $params = [])
+		{
+			return $this->AffectedRows($sql, $types, $params);
 		}
 
 		public function Remove($sql, $types = "", $params = [])
 		{
-			$con = $this->establishConnection();
-			$result = array();
-			if ($con) {
-				$stmt = $this->PrepareAndBind($con, $sql, $types, $params);
-				if ($stmt === false) {
-					$result[0] = -1;
-					$result[1] = $con->error;
-					return $result;
-				}
-				$stmt->execute();
-				$result[0] = $stmt->affected_rows;
+			$result = $this->AffectedRows($sql, $types, $params);
+			if ($result[0] !== -1) {
 				$result[1] = "Data was removed";
-				$stmt->close();
-			} else {
-				$result[0] = -1;
-				$result[1] = "Connection failed";
 			}
 			return $result;
 		}
 
-		public function RemoveCitationMarks($stringToHandle)
+		public function SecureInput($stringToEscape)
 		{
-			return (preg_match("/%22|\"/", $stringToHandle)) ? preg_replace("/%22/", "", $stringToHandle) : $stringToHandle;
+			return ($stringToEscape === null || $stringToEscape === "") ? $stringToEscape : $this->Connect()->real_escape_string($stringToEscape);
 		}
 
 		public function Base64Encode($stringToEncode)
@@ -182,14 +94,54 @@
 			return base64_decode($stringToDecode);
 		}
 
-		public function UrlEncoder($stringToDecode)
+		public function UrlEncoder($stringToEncode)
 		{
-			return urlencode($stringToDecode);
+			return urlencode($stringToEncode);
 		}
 
 		public function UrlDecoder($stringToDecode)
 		{
 			return urldecode($stringToDecode);
+		}
+
+		public function RemoveCitationMarks($stringToHandle)
+		{
+			return (preg_match("/%22|\"/", (string)$stringToHandle)) ? preg_replace("/%22/", "", $stringToHandle) : $stringToHandle;
+		}
+
+		private function AffectedRows($sql, $types, $params)
+		{
+			$stmt = $this->Execute($sql, $types, $params);
+			if ($stmt === false) {
+				return $this->Failure();
+			}
+			$affectedRows = $stmt->affected_rows;
+			$stmt->close();
+			return array($affectedRows);
+		}
+
+		private function Execute($sql, $types, $params)
+		{
+			$connection = $this->Connect();
+			$stmt = $connection->prepare($sql);
+			if ($stmt === false) {
+				error_log("Database prepare failed: " . $connection->error);
+				return false;
+			}
+			if ($types !== "" && count($params) > 0) {
+				$stmt->bind_param($types, ...$params);
+			}
+			if (!$stmt->execute()) {
+				error_log("Database execute failed: " . $stmt->error);
+				$stmt->close();
+				return false;
+			}
+			return $stmt;
+		}
+
+		private function Failure()
+		{
+			return array(-1, self::GENERIC_ERROR);
 		}
 	}
 ?>

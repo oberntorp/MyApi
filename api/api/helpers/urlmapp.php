@@ -21,7 +21,7 @@
 											"users" =>
 											array("get" => "GetUserById", "create" => "CreateUser", "update" => "UpdateUser", "delete" => "DeleteUser", "addawaitingapproval" => "AddAwaitingApprovalUsers", "approveuser" => "ApproveUsers", "getuserstoapprove" => "GetUsersToApprove", "deletedeniedapproval" => "DeleteDeniedApproval"),
 											"login" =>
-											array("get" => "CheckLogedIn", "getid" => "GetIdUserLoggedIn", "getinfo" => "GetInfoUserLoggedIn", "login" => "CheckLoginChredentials", "logout" => "LogOut"),
+											array("get" => "CheckLogedIn", "getid" => "GetIdUserLoggedIn", "getinfo" => "GetInfoUserLoggedIn", "login" => "CheckLoginChredentials"),
 											"pump" =>
 											array("lends" => "GetPumpLends", "pumplenddone" => "UpdatePumpLendsEntryDone", "pumplendstatus" => "GetPumpLendStatus", "solutions" => "GetPumpSolutions", "createlends" => "CreatePumpLendsEntry", "createsolutions" => "CreatePumpSolutionsEntry"),
 											"images"  => 
@@ -214,7 +214,7 @@
 			return explode("_", $arrayValue)[1] === "id" ? $arrayValue : null;
 		}
 
-		private function CollectBody($jsonDataIn, $mappIn, $requiresAuth = false, &$getParametersIn)
+		private function CollectBody($jsonDataIn, $mappIn, $requiresAuth, &$getParametersIn)
 		{
 			$valueArrayIndex = 0;
 			if(!empty($jsonDataIn))

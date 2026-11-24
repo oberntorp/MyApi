@@ -16,10 +16,9 @@
 		public function GetDocumentById($parameters)
 		{
 			$connection = $this->db->Connect();
-			$documentId = $this->db->SecureInput($parameters["document_id"]);
+			$documentId = $parameters["document_id"];
 			
-			$sql = sprintf("SELECT * FROM documents WHERE is_deleted = 0 AND documents_id = %d", $documentId);
-			$result = $this->db->Select($sql);
+			$result = $this->db->Select("SELECT * FROM documents WHERE is_deleted = 0 AND documents_id = ?", "i", [(int)$documentId]);
 			return $this->filesHelper->GenerateFilesOutput($result[0]);
 			
 		}
@@ -28,8 +27,7 @@
 		{
 			$connection = $this->db->Connect();
 
-			$sql = sprintf("SELECT documents.documents_id AS documents_id, documents_name, documents_meta.documents_meta_doc_type AS documents_type, documents_meta.documents_meta_doc_date AS documents_date FROM documents JOIN documents_meta ON documents.documents_id = documents_meta.documents_id WHERE is_deleted = 0 ORDER BY documents_meta.documents_meta_doc_date DESC");
-			$resultGetDocuments = $this->db->Select($sql);
+			$resultGetDocuments = $this->db->Select("SELECT documents.documents_id AS documents_id, documents_name, documents_meta.documents_meta_doc_type AS documents_type, documents_meta.documents_meta_doc_date AS documents_date FROM documents JOIN documents_meta ON documents.documents_id = documents_meta.documents_id WHERE is_deleted = 0 ORDER BY documents_meta.documents_meta_doc_date DESC");
 			return $resultGetDocuments;
 		}
 
@@ -56,15 +54,14 @@
 				];
 				return array("result" => -1, "errors" => [$uploadErrorMessages[$uploadError] ?? "Uppladdningen misslyckades."]);
 			}
-			$documentType = $this->db->SecureInput($documentFile["type"]);
-			$documentSize = $this->db->SecureInput($documentFile["size"]);
-			$documentName = $this->db->SecureInput($documentFile["name"]);
-			$fileRelatedErrors = $this->filesHelper->ValidateFilesInput($documentType, $documentName, $documentSize);
+			$documentType = $documentFile["type"];
+			$documentSize = $documentFile["size"];
+			$documentName = $documentFile["name"];
+			$fileRelatedErrors = $this->filesHelper->ValidateFilesInput($documentType, $documentName, $documentSize, $documentFile["tmp_name"] ?? null);
 			if(count($fileRelatedErrors["errors"]) == 0)
 			{
-				$content = $this->db->SecureInput($this->filesHelper->GenerateFilesInput($documentFile["tmp_name"]));
-				$sql = sprintf("INSERT INTO documents SET documents_name = '%s', documents_type = '%s', documents_size = '%s', documents_content = '%s'", $documentName, $documentType, $documentSize, $content);
-				$resultCreateDocument = $this->db->Insert($sql);
+				$content = $this->filesHelper->GenerateFilesInput($documentFile["tmp_name"]);
+				$resultCreateDocument = $this->db->Insert("INSERT INTO documents SET documents_name = ?, documents_type = ?, documents_size = ?, documents_content = ?", "ssss", [$documentName, $documentType, $documentSize, $content]);
 			}
 			$result = array("result" => (isset($resultCreateDocument)) ? $resultCreateDocument[0] : -1, "errors" => $fileRelatedErrors["errors"]);
 			return $result;
@@ -82,8 +79,7 @@
 				$newDocumentName = $this->filesHelper->FilesInputFormatName($documentDocType, $documentDocDate, $documentNameOther);
 				$this->UpdateDocumentName($newDocumentName, $documentId);
 			}
-			$sqlDocumentMeta = sprintf("INSERT INTO documents_meta SET documents_meta_doc_type = '%s', documents_meta_doc_date = '%s', documents_id = %d", $documentDocType, $documentDocDate, $documentId);
-			$resultCreateDocumentMeta = $this->db->Insert($sqlDocumentMeta);
+			$resultCreateDocumentMeta = $this->db->Insert("INSERT INTO documents_meta SET documents_meta_doc_type = ?, documents_meta_doc_date = ?, documents_id = ?", "ssi", [$documentDocType, $documentDocDate, (int)$documentId]);
 			$result = array("result" => $resultCreateDocumentMeta[0]);
 			
 			return $result;
@@ -92,21 +88,19 @@
 		public function DeleteDocument($parameters)
 		{
 			$connection = $this->db->connect();
-			$documentId = $this->db->SecureInput($parameters["document_id"]);
+			$documentId = $parameters["document_id"];
 			$isDocumentConnectedPost = $this->IsDocumentConnectedPost($documentId);
 			$resultDeleteDocument = null;
 			if(!$isDocumentConnectedPost)
 			{
-				$sql = sprintf("UPDATE documents SET is_deleted = 1 WHERE documents_id = %d", $documentId);
-				$resultDeleteDocument = $this->db->SoftDelete($sql);
+				$resultDeleteDocument = $this->db->SoftDelete("UPDATE documents SET is_deleted = 1 WHERE documents_id = ?", "i", [(int)$documentId]);
 			}
 			return ($resultDeleteDocument != null) ? $resultDeleteDocument[0] : -2;
 		}
 		
 		private function UpdateDocumentName($documentName, $documentId)
 		{
-			$sqlUpdateDocumentName = sprintf("UPDATE documents SET documents_name = '%s' WHERE documents.documents_id = %d", $documentName, $documentId);
-			return $this->db->Update($sqlUpdateDocumentName);
+			return $this->db->Update("UPDATE documents SET documents_name = ? WHERE documents.documents_id = ?", "si", [$documentName, (int)$documentId]);
 		}
 		
 		private function IsDocumentConnectedPost($documentId)

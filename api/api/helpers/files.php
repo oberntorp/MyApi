@@ -44,7 +44,8 @@ class FilesHelper
 		$fileSize = $fileInfo["documents_size"];
 		$fileContent = $fileInfo["documents_content"];
 		header("Content-Type: $fileType");
-		header("Content-Disposition: attachment; filename=$fileName");
+		header("Content-Disposition: attachment; filename=\"" . str_replace(array("\"", "\\", "\r", "\n"), "_", $fileName) . "\"; filename*=UTF-8''" . rawurlencode($fileName));
+		header("X-Content-Type-Options: nosniff");
 		header("Content-Length: $fileSize");
 		return $fileContent;
 	}
@@ -54,21 +55,23 @@ class FilesHelper
 		return file_get_contents($fileData);
 	}
 	
-	public function ValidateFilesInput($type, $name, $size)
+	public function ValidateFilesInput($type, $name, $size, $tmpPath = null)
 	{
 		$errors = array("errors" => array());
-		$ext = explode(".", $name);
-		$ext = $ext[1];
-		if(!array_key_exists($ext,  $this->allowedFileTypes) && $this->allowedFileSize[$ext] != $type)
-		{
-			$errors["errors"][] = "Filtypen " . $ext . " " . "-" . " " . $this->allowedFileSize[$ext] . " " . "får inte laddas upp.";
+		$extension = strtolower(pathinfo((string)$name, PATHINFO_EXTENSION));
+		if (!array_key_exists($extension, $this->allowedFileTypes) || !$this->HasAllowedContentType($extension, $type, $tmpPath)) {
+			$errors["errors"][] = "Filtypen " . $extension . " får inte laddas upp.";
 		}
-		if($size > $this->allowedFileSize)
-		{
-			$errors["errors"][] = "Filen är för stor" . " " . "tillåten storlek är" . " " . $this->allowedFileSize/1048576;
+		if ($size > $this->allowedFileSize) {
+			$errors["errors"][] = "Filen är för stor, tillåten storlek är " . $this->allowedFileSize / 1048576 . " MB.";
 		}
-		
 		return $errors;
+	}
+
+	private function HasAllowedContentType($extension, $type, $tmpPath)
+	{
+		$detectedType = ($tmpPath !== null && is_file($tmpPath)) ? (new finfo(FILEINFO_MIME_TYPE))->file($tmpPath) : $type;
+		return in_array($detectedType, (array)$this->allowedFileTypes[$extension], true);
 	}
 	
 	public function FilesInputFormatName($documentType, $documentDate, $nameOfOtherDocument = "")
@@ -97,4 +100,4 @@ class FilesHelper
 		return $result . ".pdf";
 	}
 }
-?>
+?>

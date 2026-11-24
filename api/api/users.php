@@ -15,10 +15,9 @@
 		public function GetUserById($parameters)
 		{
 			$connection = $this->db->Connect();
-			$userId = $this->db->SecureInput($parameters["user_id"]);
+			$userId = $parameters["user_id"];
 			
-			$sql = sprintf("SELECT users_id, users_username, users_priviledge FROM users WHERE is_deleted = 0 AND users_id = %d", $userId);
-			$result = $this->db->Select($sql);
+			$result = $this->db->Select("SELECT users_id, users_username, users_priviledge FROM users WHERE is_deleted = 0 AND users_id = ?", "i", [(int)$userId]);
 			return $result[0];
 			
 		}
@@ -41,12 +40,11 @@
 		public function UpdateUser($parameters)
 		{
 			$connection = $this->db->Connect();
-			$userId = $this->db->SecureInput($parameters["user_id"]);
-			$userName = $this->db->SecureInput($parameters["user_username"]);
-			$userPassEnq = $this->usersHelper->security->GenerateHash($this->db->SecureInput($parameters["user_password"]));
+			$userId = $parameters["user_id"];
+			$userName = $parameters["user_username"];
+			$userPassEnq = $this->usersHelper->security->HashPassword($parameters["user_password"]);
 			
-			$sql = sprintf("UPDATE users SET users_username = '%s', users_password = '%s' WHERE users_id = %d", $userName, $userPassEnq, $userId);
-			$resultUpdateUser = $this->db->Update($sql);
+			$resultUpdateUser = $this->db->Update("UPDATE users SET users_username = ?, users_password = ? WHERE users_id = ?", "ssi", [$userName, $userPassEnq, (int)$userId]);
 			return $resultUpdateUser;
 		}
 
@@ -58,10 +56,9 @@
 		public function DeleteUser($parameters)
 		{
 			$connection = $this->db->connect();
-			$userId = $this->db->SecureInput($parameters["user_id"]);
+			$userId = $parameters["user_id"];
 			
-			$sql = sprintf("UPDATE users SET is_deleted = 1 WHERE users_id = %d", $userId);
-			$resultDeleteUser = $this->db->SoftDelete($sql);
+			$resultDeleteUser = $this->db->SoftDelete("UPDATE users SET is_deleted = 1 WHERE users_id = ?", "i", [(int)$userId]);
 			return $resultDeleteUser[0];
 		}
 

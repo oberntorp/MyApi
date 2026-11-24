@@ -14,29 +14,29 @@
             $this->SendMail($this->header, $subject, $message, $this->sendEmailTo);
         }
 
-        public function SendRegistrationAlertAddedByAdmin($realNameOfNewUser, $userNameOfNewUser, $passwordOfNewUser, $emailOfNewUser)
+        public function SendRegistrationAlertAddedByAdmin($realNameOfNewUser, $userNameOfNewUser, $emailOfNewUser)
         {
             $subject = "Bekräftelse på registrering som användare på tarno.nu";
             $message = "Hej " . " " . $realNameOfNewUser . ""  . ".\n\n";
             $message .= "Detta mail är en bekräftelse på att du har registrerats som användare på tarno.nu, du kan börja använda ditt konto.";
             $message .= "\n\n";
-            $message .= "Spara dina inloggningsuppgifter nedan:";
+            $message .= "Dina inloggningsuppgifter:";
             $message .= "\n\n";
             $message .= "Användarnamn:" . " " . $userNameOfNewUser . "\n";
-            $message .= "Lösenord:" . " " . $passwordOfNewUser;
+            $message .= "Lösenord: det du valde vid registreringen, eller det du har fått av administratören.";
             $this->SendMail($this->header, $subject, $message, $emailOfNewUser);
         }
 
-        public function SendRegistrationAlert($realNameOfNewUser, $userNameOfNewUser, $passwordOfNewUser, $emailOfNewUser)
+        public function SendRegistrationAlert($realNameOfNewUser, $userNameOfNewUser, $emailOfNewUser)
         {
             $subject = "Bekräftelse på registrering som användare på tarno.nu";
             $message = "Hej " . " " . $realNameOfNewUser . ""  . ".\n\n";
             $message .= "Detta mail är en bekräftelse på att du har registrerats som användare på tarno.nu, när du får ett mail om att din registrering blivit godkänd, kan du börja använda ditt konto.";
             $message .= "\n\n";
-            $message .= "Spara dina inloggningsuppgifter nedan:";
+            $message .= "Dina inloggningsuppgifter:";
             $message .= "\n\n";
             $message .= "Användarnamn:" . " " . $userNameOfNewUser . "\n";
-            $message .= "Lösenord:" . " " . $passwordOfNewUser;
+            $message .= "Lösenord: det du valde vid registreringen, eller det du har fått av administratören.";
             $this->SendMail($this->header, $subject, $message, $emailOfNewUser);
         }
 
@@ -46,10 +46,10 @@
             $message = "Hej " . " " . $realNameOfNewUser . ""  . ".\n\n";
             $message .= "Detta mail är en bekräftelse på att du har blivit godkänd som användare på tarno.nu";
             $message .= "\n\n";
-            $message .= "Spara dina inloggningsuppgifter nedan:";
+            $message .= "Dina inloggningsuppgifter:";
             $message .= "\n\n";
             $message .= "Användarnamn:" . " " . $userNameOfNewUser . "\n";
-            $message .= "Lösenord:" . " " . "Har du erhållit i emailet med ämnesraden: Bekräftelse på registrering som användare på tarno.nu";
+            $message .= "Lösenord: det du valde vid registreringen.";
             $this->SendMail($this->header, $subject, $message, $emailOfNewUser);
         }
 
