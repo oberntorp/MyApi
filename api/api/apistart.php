@@ -18,7 +18,7 @@ class ApiStart
     function __construct()
     {
         $this->headers = apache_request_headers();
-        $this->db = ($_SERVER['SERVER_NAME'] == "localhost") ? new Database("root", "", "localhost", "tarnova") : new Database("tarno_nu", "ruDGWUGAywcKeA89fAACYi83", "tarno.nu.mysql", "tarno_nu");
+        $this->db = new Database();
         $this->urlMapp = new UrlMapp($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD'], $this->GetSessionId());
         list($this->class, $this->method, $this->parameters, $this->error) = $this->urlMapp->ExtractClassMethod();
     }

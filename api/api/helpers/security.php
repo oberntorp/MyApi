@@ -1,4 +1,5 @@
 <?php
+    require_once(__DIR__ . "/config.php");
     require_once("jwt/php-jwt/src/BeforeValidException.php");
     require_once("jwt/php-jwt/src/ExpiredException.php");
     require_once("jwt/php-jwt/src/SignatureInvalidException.php");
@@ -17,8 +18,8 @@
                 "session_id" => null
             )
          );
-        private $key = "1aO3?!8796!";
-        const SALT = '$6$q1OzMb23'; // SHA512
+        private $key = "";
+        private $salt = "";
         private $methodsRequiringAuth = array(
             "pages" => 
                 array("getall" => "GetPages", "create" => "CreatePage", "update" => "UpdatePage"),
@@ -73,9 +74,16 @@
                     "importantinfo" =>
                         array("delete" => "DeleteImportantInfoPost"));
 
+        function __construct()
+        {
+            $secrets = Config::Secrets();
+            $this->key = $secrets["jwt_key"];
+            $this->salt = $secrets["password_salt"];
+        }
+
         public function GenerateHash($unEncryptedString)
         {
-            return crypt($unEncryptedString, self::SALT);
+            return crypt($unEncryptedString, $this->salt);
         }
 
         private function IsPreveledgeUserLoggedInNotAdmin($sessionId, $db)

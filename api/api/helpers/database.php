@@ -1,4 +1,5 @@
 <?php
+	require_once(__DIR__ . "/config.php");
 	class Database
 	{
 		private $user = "";
@@ -9,12 +10,11 @@
 
 		function __construct()
 		{
-			$connectionString = ($_SERVER['SERVER_NAME'] == "localhost") ? "root; ; localhost; tarnova" : "; ; ; ";
-			$connectionString = explode(";", $connectionString);
-			$this->user = trim($connectionString[0]);
-			$this->password = trim($connectionString[1]);
-			$this->server = trim($connectionString[2]);
-			$this->db = trim($connectionString[3]);
+			$settings = Config::DatabaseSettings();
+			$this->user = $settings["user"];
+			$this->password = $settings["password"];
+			$this->server = $settings["server"];
+			$this->db = $settings["database"];
 		}
 
 		private function establishConnection()
