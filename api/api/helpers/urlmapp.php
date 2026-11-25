@@ -164,16 +164,16 @@
 		{
 			$mapp = null;
 			if($requestMethod == "GET" && $this->HasParameters($getParameters) || $requestMethod == "PUT" || $requestMethod == "POST")
-				$mapp = $this->mappOfClassesMethods[$parameterType][$class][$method];
+				$mapp = $this->mappOfClassesMethods[$parameterType][$class][$method] ?? array();
 			if($requestMethod == "GET" || $requestMethod == "PUT" || $requestMethod == "DELETE")
 			{
 				if($requestMethod == "GET" || $requestMethod == "DELETE")
 				{
 					if($this->HasParameters($getParameters))
 					{
-						foreach($this->mappOfClassesMethods[$parameterType][$class][$method] as $queryStringKey => $queryString)
+						foreach($this->mappOfClassesMethods[$parameterType][$class][$method] ?? array() as $queryStringKey => $queryString)
 						{
-							$getParametersIn[$queryString] = $getParameters[$queryStringKey];
+							$getParametersIn[$queryString] = $getParameters[$queryStringKey] ?? "";
 						}
 					}
 				}
