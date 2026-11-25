@@ -77,14 +77,13 @@ class Login
 
 	private function CreateSession($user)
 	{
-		$sessionInput = $user["users_id"] . "_" . $this->security->GenerateHash($user["users_username"]);
-		$clientAddress = $_SERVER["REMOTE_ADDR"] ?? "";
-		return $this->security->SetJWtToken($clientAddress . "_" . $sessionInput) ?: "";
+		return $this->security->CreateSession($user, $this->db);
 	}
 
+	// Samma kontroll som skyddade anrop: giltig token, aktiv användare och aktuell token_version.
 	public function CheckLogedIn($parameters)
 	{
-		return ($parameters["session_id"] !== "null") ? $this->security->CheckVilidityJWT($this->db->RemoveCitationMarks($parameters["session_id"])) : false;
+		return ($parameters["session_id"] !== "null") && $this->security->GetUserIdFromSession($parameters["session_id"], $this->db) !== -1;
 	}
 
 	public function GetIdUserLoggedIn($parameters)

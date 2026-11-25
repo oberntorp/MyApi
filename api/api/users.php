@@ -98,10 +98,18 @@
 				return UsersHelper::Failure($error);
 			}
 
-			return $this->db->Update(
+			$result = $this->db->Update(
 				"UPDATE users SET users_username = ?, users_password = ? WHERE users_id = ?",
 				"ssi", [$newUserName, $this->usersHelper->security->HashPassword($newPassword), $userId]
 			);
+			if ($result[0] < 0) {
+				return $result;
+			}
+			// Andra sessioner, även i TarnoVa som delar databasen, slutar gälla. Den som bytte får en ny token.
+			$security = $this->usersHelper->security;
+			$security->RevokeSessions($userId, $this->db);
+			$result["session_id"] = $security->CreateSession(array("users_id" => $userId, "users_username" => $newUserName), $this->db);
+			return $result;
 		}
 
 		public function GetUsersToApprove()

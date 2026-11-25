@@ -21,7 +21,8 @@
             "nbf" => null,
             "exp" => null,
             "data" => array(
-                "session_id" => null
+                "session_id" => null,
+                "token_version" => 0,
             )
          );
         private $key = "";
@@ -113,20 +114,23 @@
             return crypt($unEncryptedString, $this->salt);
         }
 
-        // Användar-id ur en giltig session, eller -1. Användaren måste finnas och inte vara raderad,
-        // så att en raderad användare spärras direkt och inte först när token går ut.
+        // Användar-id ur en giltig session, eller -1. Användaren måste finnas och inte vara raderad, och tokenens
+        // token_version måste vara den aktuella. Tokens utan token_version (utfärdade före migreringen) räknas som version 0.
         public function GetUserIdFromSession($sessionId, $db)
         {
-            $data = $this->GetDataOfJWT($db->RemoveCitationMarks($sessionId));
-            if ($data === null) {
+            $data = $this->DecodeSessionData($db->RemoveCitationMarks($sessionId));
+            if (!isset($data->session_id)) {
                 return -1;
             }
-            $parts = explode("_", $data);
+            $parts = explode("_", (string)$data->session_id);
             $userId = (int)($parts[self::SESSION_USER_ID_PART] ?? 0);
             if ($userId <= 0) {
                 return -1;
             }
-            $user = $db->Select("SELECT users_id FROM users WHERE is_deleted = 0 AND users_id = ?", "i", [$userId]);
+            $user = $db->Select(
+                "SELECT users_id FROM users WHERE is_deleted = 0 AND users_id = ? AND users_token_version = ?",
+                "ii", [$userId, (int)($data->token_version ?? 0)]
+            );
             return $user[0] == -1 ? -1 : $userId;
         }
 
@@ -164,13 +168,37 @@
             return JWT::decode((string)$jwtToken, new Key($this->key, self::JWT_ALGORITHM));
         }
 
-        public function SetJWtToken($sessionId)
+        public function SetJWtToken($sessionId, $tokenVersion = 0)
         {
             $timeOfLogin = time();
             $this->token["iat"] = $timeOfLogin;
             $this->token["exp"] = $timeOfLogin + (60 * 15);
             $this->token["data"]["session_id"] = $sessionId;
+            $this->token["data"]["token_version"] = (int)$tokenVersion;
             return $this->CreateJWT();
+        }
+
+        // Token får användarens aktuella token_version. Ökas versionen (RevokeSessions) slutar alla äldre tokens att gälla.
+        public function CreateSession($user, $db)
+        {
+            $sessionInput = $user["users_id"] . "_" . $this->GenerateHash($user["users_username"]);
+            $clientAddress = $_SERVER["REMOTE_ADDR"] ?? "";
+            return $this->SetJWtToken($clientAddress . "_" . $sessionInput, $this->TokenVersion($user["users_id"], $db)) ?: "";
+        }
+
+        private function TokenVersion($userId, $db)
+        {
+            $result = $db->Select("SELECT users_token_version AS version FROM users WHERE users_id = ?", "i", [(int)$userId]);
+            return $result[0] == -1 ? 0 : (int)$result[0]["version"];
+        }
+
+        public function RevokeSessions($userId, $db)
+        {
+            $result = $db->Update(
+                "UPDATE users SET users_token_version = users_token_version + 1 WHERE is_deleted = 0 AND users_id = ?",
+                "i", [(int)$userId]
+            );
+            return $result[0] >= 0;
         }
 
         public function CheckVilidityJWT($jwtToken)
@@ -186,14 +214,18 @@
             }
         }
 
-        public function GetDataOfJWT($jwtToken)
+        private function DecodeSessionData($jwtToken)
         {
             try {
-                return $this->DecodeJWT($jwtToken)->data->session_id ?? null;
-            }
-            catch(Exception $e) {
+                return $this->DecodeJWT($jwtToken)->data ?? null;
+            } catch (Exception $e) {
                 return null;
             }
+        }
+
+        public function GetDataOfJWT($jwtToken)
+        {
+            return $this->DecodeSessionData($jwtToken)->session_id ?? null;
         }
 
         // Returnerar true när anropet ska nekas. Samma regler som förut, men användaren slås upp i databasen
