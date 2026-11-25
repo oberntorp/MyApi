@@ -162,6 +162,37 @@ Ge dem ett nytt lösenord, eller skapa kontona på nytt.
 ### Återställning
 
 Lägg tillbaka föregående version av API:t. Databasen påverkas inte. Den nya `jwt_key` kan stå kvar, den gamla koden fungerar med den.
+## Spärr av sessioner (token_version)
+
+Skapad: 2026-11-26
+
+Varje användare har ett versionsnummer, `users.users_token_version`, som skrivs in i varje token. Vid varje anrop jämförs token med databasen. När numret ökas slutar alla användarens äldre tokens att gälla direkt, även en stulen token som hålls vid liv med förnyelse.
+
+Numret ökas när användaren:
+
+- **byter lösenord** med `users/update`. Svaret har en ny `session_id` för den session som gjorde bytet.
+
+`login/get` kontrollerar nu användaren och versionen, inte bara signaturen. Tokens som utfärdats före utläggningen saknar versionsnumret och räknas som version 0, så ingen loggas ut vid utläggningen.
+
+MyApi delar tabellen `users` med TarnoVa. Ett lösenordsbyte här avslutar därför också användarens sessioner i TarnoVa, och "Logga ut på alla enheter" i TarnoVa avslutar sessionerna här. Skriptet finns i båda repona och kan köras från vilket som helst. Den andra körningen svarar att ingen migrering behövs.
+
+### Migrering
+
+`api/api/migrations/upgradeTokenVersion.php` har samma flaggor som de andra skripten. Kör migreringen **innan** koden läggs ut. Den nya koden läser kolumnen, och utan den fungerar ingen inloggning.
+
+1. Ta en export av databasen.
+2. `php api/api/migrations/upgradeTokenVersion.php --prod --dry-run` visar satsen: `ALTER TABLE users ADD COLUMN users_token_version INT NOT NULL DEFAULT 0`.
+3. `php api/api/migrations/upgradeTokenVersion.php --prod` ska avsluta med "Migreringen är klar och kontrollerad".
+4. `--prod --check` ska svara att ingen migrering behövs.
+
+### Kontrollera efter utläggning
+
+1. Logga in två gånger (två tokens). Byt lösenord med `users/update` med den ena: den nya token i svaret fungerar, och båda de gamla får 401.
+
+### Återställning
+
+Lägg tillbaka föregående kod. Kolumnen kan stå kvar, den gamla koden använder den inte. Vill du ta bort den när den gamla koden ligger ute: `ALTER TABLE users DROP COLUMN users_token_version;`.
+
 ## Efter utläggning – kontrollera
 
 Skapad: 2026-11-24
