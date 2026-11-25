@@ -4,6 +4,8 @@ MyApi är ett fristående PHP-API som används av egna projekt. Det finns ingen 
 
 ## Krav på servern
 
+Skapad: 2026-11-24
+
 - PHP 8.x med `mysqli`
 - Apache med `mod_rewrite` och `AllowOverride All`
 - MySQL/MariaDB
@@ -11,11 +13,15 @@ MyApi är ett fristående PHP-API som används av egna projekt. Det finns ingen 
 
 ## Före varje utläggning
 
+Skapad: 2026-11-24
+
 1. Kontrollera att du står på rätt gren och att allt är incheckat (`git status`).
 2. Ta backup av databasen om schemat har ändrats.
 3. Kontrollera att `api/api/config/db.config.php` och `secrets.config.php` finns på servern (se nedan). De följer inte med vid utläggning.
 
 ## Lägg ut
+
+Skapad: 2026-11-24
 
 Kopiera `api/`-mappen till webbplatsens `api/` på servern.
 
@@ -24,6 +30,8 @@ Kopiera `api/`-mappen till webbplatsens `api/` på servern.
 - CORS tillåter i dag bara `http://localhost:4200` (se `Access-Control-Allow-Origin` i `api/api/apistart.php`). Ändra där om en annan frontend ska anropa API:t.
 
 ## Konfigfiler på servern
+
+Skapad: 2026-11-24
 
 Hemligheterna ligger i två filer i `api/api/config/`. De ligger i `.gitignore` och läses av `Config` i `api/api/helpers/config.php`, som kastar ett tydligt fel om en fil saknas. Till varje fil finns en `*.example.php` att kopiera.
 
@@ -51,6 +59,8 @@ Byt aldrig `password_salt` utan migrering. Alla lösenord blir då ogiltiga.
 Mapparna `config/`, `helpers/logs/` och `migrations/` har en `.htaccess` som spärrar dem för webben. Kontrollera att filerna följer med vid utläggning (FTP-program hoppar ofta över filer som börjar med punkt).
 
 ## Databasmigrering
+
+Skapad: 2026-11-24
 
 Databasändringar görs med ett kommandoradsskript, `api/api/migrations/upgradeSecurity.php`. Det följer samma mönster som Passwordmngrs skript i `hasher/`:
 
@@ -101,12 +111,16 @@ Migrera alltid **före** du laddar upp kod som kräver ändringen, och prova på
 
 ## Efter utläggning – kontrollera
 
+Skapad: 2026-11-24
+
 1. Anropa en öppen route och kontrollera att svaret är JSON och inte ett PHP-fel.
 2. Anropa en skyddad route utan inloggning. Den ska ge 401.
 3. Logga in och kontrollera att en skyddad route fungerar med `Authorization: Bearer <session>`.
 4. Titta i serverns felogg.
 
 ## Återställning
+
+Skapad: 2026-11-24
 
 - Gå tillbaka till föregående commit och lägg ut `api/` igen. Konfigfilerna på servern påverkas inte.
 - Återställ databasen från backup om schemat har ändrats.
