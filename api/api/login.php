@@ -44,8 +44,12 @@ class Login
 		return array("session_id" => $this->CreateSession($user));
 	}
 
+	// Ett tomt lösenord godtas aldrig, även om en gammal hash råkar vara hashen av den tomma strängen.
 	private function FindUserByCredentials($userName, $password)
 	{
+		if ($password === "") {
+			return null;
+		}
 		$users = $this->db->Select(
 			"SELECT users_id, users_username, users_password FROM users WHERE is_deleted = 0 AND users_username = ?",
 			"s", [$userName]

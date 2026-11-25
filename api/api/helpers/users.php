@@ -41,7 +41,7 @@ class UsersHelper
 						$usersToAdd[$indexOfNewUser]["userName"] = $parameter;
 					if($key === "user_password")
 					{
-						$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($userPass);
+						$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($parameter);
 					}
 					if($key === "user_priviledge")
 						$usersToAdd[$indexOfNewUser]["userPriviledge"] = $parameter;
@@ -60,12 +60,10 @@ class UsersHelper
 					$usersToAdd[$indexOfNewUser]["userName"] = $parameterValue;
 				if($parameterKey === "user_password")
 				{
-					$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($userPass);
+					$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($parameterValue);
 				}
 				if($parameterKey === "user_priviledge")
 					$usersToAdd[$indexOfNewUser]["userPriviledge"] = $parameterValue;
-				
-				$indexOfNewUser++;
 			}
 		}
 		for($i = 0; $i < count($usersToAdd); $i++)
