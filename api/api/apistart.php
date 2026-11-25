@@ -23,17 +23,25 @@ class ApiStart
         list($this->class, $this->method, $this->parameters, $this->error) = $this->urlMapp->ExtractClassMethod();
     }
 
+    const DEVELOPMENT_ORIGIN = "http://localhost:4200";
+
+    // Ingen frontend på en annan domän är känd, så i produktion tillåts bara anrop från samma domän.
+    // Utvecklingsservern tillåts när API:t körs lokalt. Inga cookies används, så Allow-Credentials skickas inte.
     public function SetHeaders()
     {
         if($this->class == "documents" && $this->method == "get")
             $this->fileDownload = true;
         else
-            header('Content-Type: application/json, charset=utf-8');
+            header('Content-Type: application/json; charset=utf-8');
 
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS, DELETE');
-        header('Access-Control-Allow-Origin: http://localhost:4200');
-        header('Access-Control-Allow-Credentials: true');
+        if (($_SERVER["SERVER_NAME"] ?? "") === "localhost") {
+            header('Access-Control-Allow-Headers: Content-Type, Authorization');
+            header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS, DELETE');
+            header('Access-Control-Allow-Origin: ' . self::DEVELOPMENT_ORIGIN);
+        }
+        header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
+        header('X-Content-Type-Options: nosniff');
+        header('Referrer-Policy: no-referrer');
     }
 
     public function CancelCallIfNoAccess()

@@ -12,7 +12,6 @@ class Login
 	private $loginHelper = null;
 	private $db = null;
 	private $usersHelper = null;
-	private $debug = true;
 	private $users = null;
 	private $security = null;
 	private $contact = null;
@@ -79,7 +78,7 @@ class Login
 	private function CreateSession($user)
 	{
 		$sessionInput = $user["users_id"] . "_" . $this->security->GenerateHash($user["users_username"]);
-		$clientAddress = $this->debug ? "127.0.0.1" : $_SERVER["REMOTE_ADDR"];
+		$clientAddress = $_SERVER["REMOTE_ADDR"] ?? "";
 		return $this->security->SetJWtToken($clientAddress . "_" . $sessionInput) ?: "";
 	}
 
