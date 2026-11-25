@@ -20,7 +20,6 @@ class UsersHelper
 		$userLastname = "";
 		$userEmail = "";
 		$userName = "";
-		$userPass = "";
 		$userPassEnq = "";
 		$userPriviledge = "";
 		$arrayResult = array();
