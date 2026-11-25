@@ -1,4 +1,6 @@
 <?php
+require_once(__DIR__ . "/uservalidation.php");
+
 class UsersHelper
 {
 	private $db = null;
@@ -12,122 +14,119 @@ class UsersHelper
 		$this->contact = new Contact();
 	}
 
+	// Vid fel: {"0": 0, "error": "..."}. Klienterna jämför svaret med 1, så ett fel räknas fortfarande som misslyckat.
+	public static function Failure($message)
+	{
+		return array(0 => 0, "error" => $message);
+	}
+
 	public function AddUsersToDb($parameters)
 	{
-		$connection = $this->db->Connect();
 		$usersToAdd = array();
-		$userFirstname = "";
-		$userLastname = "";
-		$userEmail = "";
-		$userName = "";
-		$userPassEnq = "";
-		$userPriviledge = "";
-		$arrayResult = array();
 		$indexOfNewUser = 0;
 		foreach($parameters as $parameterKey => $parameterValue)
-		{	
+		{
 			if(is_array($parameterValue))
 			{
-				foreach($parameterValue as $key => $parameter)
-				{
-					if($key === "user_firstname")
-						$usersToAdd[$indexOfNewUser]["userFirstname"] = $parameter;
-					if($key === "user_lastname")
-						$usersToAdd[$indexOfNewUser]["userLastname"] = $parameter;
-					if($key === "user_email_confirmation")
-						$usersToAdd[$indexOfNewUser]["userEmail"] = $parameter;
-					if($key === "user_username")
-						$usersToAdd[$indexOfNewUser]["userName"] = $parameter;
-					if($key === "user_password")
-					{
-						$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($parameter);
-					}
-					if($key === "user_priviledge")
-						$usersToAdd[$indexOfNewUser]["userPriviledge"] = $parameter;
-				}
+				$usersToAdd[$indexOfNewUser] = $this->ReadNewUser($parameterValue);
 				$indexOfNewUser++;
 			}
-			else 
+			else
 			{
-				if($parameterKey === "user_firstname")
-					$usersToAdd[$indexOfNewUser]["userFirstname"] = $parameterValue;
-				if($parameterKey === "user_lastname")
-					$usersToAdd[$indexOfNewUser]["userLastname"] = $parameterValue;
-				if($parameterKey === "user_email_confirmation")
-					$usersToAdd[$indexOfNewUser]["userEmail"] = $parameterValue;
-				if($parameterKey === "user_username")
-					$usersToAdd[$indexOfNewUser]["userName"] = $parameterValue;
-				if($parameterKey === "user_password")
-				{
-					$usersToAdd[$indexOfNewUser]["userPassEnq"] = $this->security->HashPassword($parameterValue);
-				}
-				if($parameterKey === "user_priviledge")
-					$usersToAdd[$indexOfNewUser]["userPriviledge"] = $parameterValue;
+				$usersToAdd[$indexOfNewUser] = array_merge($usersToAdd[$indexOfNewUser] ?? array(), $this->ReadNewUser(array($parameterKey => $parameterValue)));
 			}
 		}
-		for($i = 0; $i < count($usersToAdd); $i++)
-		{
-			$result = $this->db->Insert("INSERT INTO users SET users_username = ?, users_password = ?, users_priviledge = ?", "sss", [$usersToAdd[$i]["userName"], $usersToAdd[$i]["userPassEnq"], $usersToAdd[$i]["userPriviledge"]]);
-			$arrayResult[] = $result;
-			if($result[0] > 0)
-			{
-				$this->contact->SendRegistrationAlertAddedByAdmin($usersToAdd[$i]["userFirstname"] . " " . $usersToAdd[$i]["userLastname"], $usersToAdd[$i]["userName"], $usersToAdd[$i]["userEmail"]);
-			}
-		}
+		$usersToAdd = array_values(array_filter($usersToAdd, function ($user) {
+			return count($user) > 0;
+		}));
 
-		return (count($arrayResult) > 0) ? 1 : 0;
+		$validationError = $this->FindNewUsersError($usersToAdd);
+		if($validationError !== null)
+			return self::Failure($validationError);
+
+		foreach($usersToAdd as $user)
+		{
+			$result = $this->db->Insert("INSERT INTO users SET users_username = ?, users_password = ?, users_priviledge = ?", "sss", [trim($user["userName"]), $this->security->HashPassword($user["userPassword"]), $user["userPriviledge"] ?? "normal"]);
+			if($result[0] <= 0)
+				return self::Failure("Användaren kunde inte sparas");
+			$this->contact->SendRegistrationAlertAddedByAdmin(($user["userFirstname"] ?? "") . " " . ($user["userLastname"] ?? ""), $user["userName"], $user["userEmail"] ?? "");
+		}
+		return 1;
+	}
+
+	private function ReadNewUser($fields)
+	{
+		$keys = array(
+			"user_firstname" => "userFirstname",
+			"user_lastname" => "userLastname",
+			"user_email_confirmation" => "userEmail",
+			"user_username" => "userName",
+			"user_password" => "userPassword",
+			"user_priviledge" => "userPriviledge",
+		);
+		$user = array();
+		foreach($fields as $key => $value)
+		{
+			if(isset($keys[$key]))
+				$user[$keys[$key]] = $value;
+		}
+		return $user;
+	}
+
+	private function FindNewUsersError($usersToAdd)
+	{
+		if(count($usersToAdd) === 0)
+			return "Inga användare angavs";
+		foreach($usersToAdd as $user)
+		{
+			$error = $this->FindNewUserError($user["userName"] ?? "", $user["userPassword"] ?? "");
+			if($error !== null)
+				return $error;
+		}
+		return null;
+	}
+
+	public function FindNewUserError($userName, $password)
+	{
+		$error = UserValidation::FindCredentialsError($userName, $password);
+		if($error === null && UserValidation::IsUsernameTaken($this->db, $userName))
+			$error = "Användarnamnet används redan";
+		return $error;
 	}
 
 	public function AddAwaitingApprovalUsers($parameters)
 	{
-		$connection = $this->db->Connect();
 		$userName = "";
-		$userPasswordEnq = "";
-		$userPriviledge = "";
+		$userPassword = "";
 		$userFirstname = "";
 		$userLastname = "";
 		$userEmail = "";
 
-		$arrayResult = array();
 		foreach($parameters as $key => $parameterValue)
 		{
-			if(is_array($parameterValue))
+			$fields = is_array($parameterValue) ? $parameterValue : array($key => $parameterValue);
+			foreach($fields as $fieldKey => $field)
 			{
-				foreach($parameterValue as $key => $parameter)
-				{
-					if($key === "user_username")
-						$userName = $parameter;
-					if($key === "user_password")
-					{
-						$userPasswordEnq = $this->security->HashPassword($parameter);
-					}
-					if($key === "user_firstname")
-						$userFirstname = $parameter;
-					if($key === "user_lastname")
-						$userLastname = $parameter;
-					if($key === "user_email")
-						$userEmail = $parameter;
-				}
-			}
-			else 
-			{
-					if($key === "user_username")
-							$userName = $parameterValue;
-					if($key === "user_password")
-					{
-						$userPasswordEnq = $this->security->HashPassword($parameterValue);
-					}
-					if($key === "user_firstname")
-						$userFirstname = $parameterValue;
-					if($key === "user_lastname")
-						$userLastname = $parameterValue;
-					if($key === "user_email")
-						$userEmail = $parameterValue;
+				if($fieldKey === "user_username")
+					$userName = trim((string)$field);
+				if($fieldKey === "user_password")
+					$userPassword = (string)$field;
+				if($fieldKey === "user_firstname")
+					$userFirstname = $field;
+				if($fieldKey === "user_lastname")
+					$userLastname = $field;
+				if($fieldKey === "user_email")
+					$userEmail = trim((string)$field);
 			}
 		}
 
-		$result = $this->db->Insert("INSERT INTO approval_of_users SET approval_of_users_first_name = ?, approval_of_users_last_name = ?, approval_of_users_email = ?, approval_of_users_username = ?, approval_of_users_password = ?", "sssss", [$userFirstname, $userLastname, $userEmail, $userName, $userPasswordEnq]);
-		$arrayResult[] = $result;
+		$validationError = $this->FindNewUserError($userName, $userPassword);
+		if($validationError === null && !filter_var($userEmail, FILTER_VALIDATE_EMAIL))
+			$validationError = "Ange en giltig epostadress";
+		if($validationError !== null)
+			return self::Failure($validationError);
+
+		$result = $this->db->Insert("INSERT INTO approval_of_users SET approval_of_users_first_name = ?, approval_of_users_last_name = ?, approval_of_users_email = ?, approval_of_users_username = ?, approval_of_users_password = ?", "sssss", [$userFirstname, $userLastname, $userEmail, $userName, $this->security->HashPassword($userPassword)]);
 		if($result[0] > 0)
 		{
 			$contact = new Contact();
@@ -135,7 +134,7 @@ class UsersHelper
 			$contact->SendRegistrationAlert($userFirstname . " " . $userLastname, $userName, $userEmail);
 		}
 
-		return (count($arrayResult) > 0) ? 1 : 0;
+		return ($result[0] > 0) ? 1 : self::Failure("Registreringen kunde inte sparas");
 	}
 
 	public function ApproveUsers($parameters)

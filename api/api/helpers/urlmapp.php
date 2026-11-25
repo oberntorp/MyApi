@@ -95,7 +95,7 @@
 												array("page_id", "page_name", "page_text")),
 											"users" =>
 											array("update" =>
-												array("user_id", "user_username", "user_password")),
+												array("user_id", "user_username", "user_password", "user_password_current")),
 											"links" =>
 											array("update" =>
 												array("link_id", "link_address", "link_label")),
