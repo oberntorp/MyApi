@@ -50,9 +50,13 @@ class FilesHelper
 		return $fileContent;
 	}
 	
-	public function GenerateFilesInput($fileData)
+	// Läser bara en fil som PHP själv har tagit emot som uppladdning, aldrig en sökväg eller URL från anropet.
+	public function GenerateFilesInput($uploadedPath)
 	{
-		return file_get_contents($fileData);
+		if (!is_string($uploadedPath) || $uploadedPath === "" || !is_uploaded_file($uploadedPath)) {
+			return false;
+		}
+		return file_get_contents($uploadedPath);
 	}
 	
 	public function ValidateFilesInput($type, $name, $size, $tmpPath = null)
