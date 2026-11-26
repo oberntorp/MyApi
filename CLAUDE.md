@@ -52,6 +52,7 @@ Gäller `api/api/`. Standarden beskriver hur den befintliga koden redan är skri
 ### Databasändringar
 - Ett idempotent CLI-skript i API:ts `migrations/`-mapp med `--check`, `--dry-run` och `--prod` (mönster: `upgradeSecurity.php`). En andra körning gör ingenting, och resultatet kontrolleras efteråt.
 - Körning, kontroll och återställning beskrivs i DEPLOY.md. Migreringen körs innan koden läggs ut.
+- Skriptet startar med `require_once(__DIR__ . "/setupcontext.php"); SetupRequireCommandLine();` och avslutar med `SetupExit(kod)` eller `SetupFail(text)`, aldrig `exit`, så att `setup.php` i API-roten (FtpDeploy) kan köra det. Lägg till det sist i `SETUP_SCRIPTS` i `migrations/setupcontext.php`. `setupAll.php` i samma mapp kör alla i ordning.
 
 ### Verifiering
 - Kör `php -l` på ändrade filer.

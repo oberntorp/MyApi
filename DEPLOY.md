@@ -193,6 +193,29 @@ MyApi delar tabellen `users` med TarnoVa. Ett lösenordsbyte här avslutar därf
 
 Lägg tillbaka föregående kod. Kolumnen kan stå kvar, den gamla koden använder den inte. Vill du ta bort den när den gamla koden ligger ute: `ALTER TABLE users DROP COLUMN users_token_version;`.
 
+## Setup vid utläggning (setupAll och FtpDeploy)
+
+Skapad: 2026-11-26
+
+Alla databasmigreringar kan köras i rätt ordning med ett kommando, eller av FtpDeploy innan koden läggs ut. Varje skript kan fortfarande köras ensamt som förut.
+
+- **Ordningen** står i `SETUP_SCRIPTS` i `api/api/migrations/setupcontext.php`: upgradeSecurity, upgradeTokenVersion. Ett nytt skript läggs till sist i listan.
+- **Kommandorad:** `php api/api/migrations/setupAll.php` med `--check`, `--dry-run` och `--prod`. Skripten körs i ordning, vart och ett i en egen process, och det stannar vid första fel.
+- **FtpDeploy:** fyll i profilens **Setup-adress**: `https://<API:ts domän>/api/setup.php`. Med **Kör setup innan utläggning** laddar FtpDeploy först upp setup-filerna (enligt `setup.json` bredvid `setup.php`). Sedan lägger den en engångstoken i `api/api/config/setup_token.php`, kör skripten ett i taget via `api/setup.php` och raderar tokenfilen. Resten av koden läggs ut bara om alla skript lyckades. **Kontrollera setup** gör samma sak som torrkörning. Hela flödet beskrivs i `ANVANDNING.md` i FtpDeploy, avsnitt 4.
+- **Skydd:** `setup.php` svarar 404 när tokenfilen saknas, alltså mellan utläggningar. Den kräver POST, HTTPS och rätt token (`hash_equals`), kör bara skript i `SETUP_SCRIPTS` och på servern alltid med `--prod`. Tokenfilen ligger i `.gitignore` och i en mapp som `.htaccess` spärrar för webben.
+- MyApi delar databas med TarnoVa. Skripten är idempotenta, så det spelar ingen roll vilket projekts setup som kör först.
+
+### Första utläggningen med setup
+
+1. Ta en export av databasen.
+2. Fyll i setup-adressen i FtpDeploy-profilen, klicka **Förhandsgranska** och sedan **Kontrollera setup**. Läs loggen: den visar vad varje skript skulle ändra.
+3. Lägg ut med **Kör setup innan utläggning** ikryssad.
+4. Kontrollera att tokenfilen inte finns kvar på servern, och att `curl -s -o /dev/null -w "%{http_code}" -X POST <setup-adressen>` svarar `404`.
+
+### Återställning
+
+Setup-filerna påverkar inte sajten. Vill du stänga av möjligheten helt raderar du `setup.php` på servern. Databasändringarna återställs enligt avsnittet för respektive migrering.
+
 ## Efter utläggning – kontrollera
 
 Skapad: 2026-11-24
