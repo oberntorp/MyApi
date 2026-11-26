@@ -1,8 +1,6 @@
 <?php
-	if (PHP_SAPI !== "cli") {
-		http_response_code(403);
-		exit("Endast kommandorad.");
-	}
+	require_once(__DIR__ . "/setupcontext.php");
+	SetupRequireCommandLine();
 
 	const MINIMUM_PASSWORD_COLUMN_LENGTH = 255;
 	const EXIT_OK = 0;
@@ -97,14 +95,14 @@
 	$changes = pendingChanges($con, $requiredTables, $passwordColumns);
 	if (count($changes) === 0) {
 		echo "Databasen är redan uppdaterad. Ingen migrering behövs.\n";
-		exit(EXIT_OK);
+		SetupExit(EXIT_OK);
 	}
 
 	echo "Följande ändringar behövs:\n";
 	printChanges($changes);
 	if ($checkOnly || $dryRun) {
 		echo $checkOnly ? "Kontroll klar, inget ändrat.\n" : "Torrkörning klar, inget ändrat.\n";
-		exit($checkOnly ? EXIT_MIGRATION_NEEDED : EXIT_OK);
+		SetupExit($checkOnly ? EXIT_MIGRATION_NEEDED : EXIT_OK);
 	}
 
 	foreach ($changes as $sql) {
@@ -115,7 +113,7 @@
 	if (count($remaining) > 0) {
 		fwrite(STDERR, "Kontrollen efter migreringen misslyckades. Kvar att göra:\n");
 		printChanges($remaining);
-		exit(EXIT_FAILED);
+		SetupExit(EXIT_FAILED);
 	}
 	echo "Migreringen är klar och kontrollerad.\n";
 ?>
