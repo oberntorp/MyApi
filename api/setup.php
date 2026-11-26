@@ -38,8 +38,10 @@
 		SetupRespond(array("error" => "Not found"), 404);
 	}
 
-	// Avgörs innan skripten körs, eftersom de själva skriver över SERVER_NAME.
-	$isLocal = ($_SERVER["SERVER_NAME"] ?? "") === "localhost";
+	// Avgörs innan skripten körs, eftersom de själva skriver över SERVER_NAME. SERVER_NAME kan komma från klientens
+	// Host-header, så anropet måste också komma från datorn själv för att räknas som lokalt.
+	$isLoopback = in_array($_SERVER["REMOTE_ADDR"] ?? "", array("127.0.0.1", "::1"), true);
+	$isLocal = $isLoopback && ($_SERVER["SERVER_NAME"] ?? "") === "localhost";
 	if (!$isLocal && !SetupIsHttps()) {
 		SetupRespond(array("error" => "HTTPS krävs"), 403);
 	}
