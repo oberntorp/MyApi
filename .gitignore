@@ -3,3 +3,4 @@ api/.vscode/launch.json
 # Credentials and security key
 api/api/config/db.config.php
 api/api/config/secrets.config.php
+api/api/config/setup_token.php

@@ -1,0 +1,10 @@
+{
+    "description": "Läses av FtpDeploy. Filerna i upload_first laddas upp före setup, sedan läggs en engångstoken i token_file och setup.php körs. Sökvägarna är relativa till den här filen.",
+    "token_file": "api/config/setup_token.php",
+    "upload_first": [
+        "setup.php",
+        "api/config/.htaccess",
+        "api/helpers/config.php",
+        "api/migrations/"
+    ]
+}
